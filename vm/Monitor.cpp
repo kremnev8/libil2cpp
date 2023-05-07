@@ -139,6 +139,11 @@ struct MonitorData : public il2cpp::utils::ThreadSafeFreeListNode
         return (owningThreadId != kCanBeAcquiredByOtherThread && owningThreadId != kHasBeenReturnedToFreeList);
     }
 
+    bool IsOwnedByThread(il2cpp::os::Thread::ThreadId threadId) const
+    {
+        return owningThreadId == threadId;
+    }
+
     bool TryAcquire(size_t threadId)
     {
         // The compare_exchange_strong method can change its first argument.
@@ -623,7 +628,7 @@ namespace vm
 
         // Wait for pulse (if we either have a timeout or are supposed to
         // wait infinitely).
-        il2cpp::os::WaitStatus pulseWaitStatus = kWaitStatusSuccess;
+        il2cpp::os::WaitStatus pulseWaitStatus = kWaitStatusTimeout;
         Il2CppException* exceptionThrownDuringWait = NULL;
         if (timeoutMilliseconds != 0)
         {
@@ -685,6 +690,15 @@ namespace vm
             return false;
 
         return monitor->IsAcquired();
+    }
+
+    bool Monitor::IsOwnedByCurrentThread(Il2CppObject* object)
+    {
+        MonitorData* monitor = object->monitor;
+        if (!monitor)
+            return false;
+
+        return monitor->IsOwnedByThread(il2cpp::os::Thread::CurrentThreadId());
     }
 } /* namespace vm */
 } /* namespace il2cpp */
